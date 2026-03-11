@@ -1,0 +1,329 @@
+<template>
+  <div class="login-container">
+    <div class="login-wrapper">
+      <!-- Left Side: Branding -->
+      <div class="login-left">
+        <div class="brand-content">
+          <div class="logo-area">
+             <svg width="120" height="120" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 3L2 12H5V20H10V14H14V20H19V12H22L12 3Z" fill="white" fill-opacity="0.9"/>
+                <path d="M7 16H9V18H7V16Z" fill="#165DFF"/>
+                <path d="M15 16H17V18H15V16Z" fill="#165DFF"/>
+                <path d="M7 12H9V14H7V12Z" fill="#165DFF"/>
+                <path d="M15 12H17V14H15V12Z" fill="#165DFF"/>
+             </svg>
+          </div>
+          <h1>智慧社区</h1>
+          <p class="subtitle">Smart Community Management System</p>
+          <p class="desc">连接你我，共建美好家园</p>
+        </div>
+        <!-- Decorative Shapes -->
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+      </div>
+      
+      <!-- Right Side: Form -->
+      <div class="login-right">
+        <div class="form-content">
+            <div class="form-header">
+                <h2>{{ isAdmin ? '后台管理登录' : '欢迎回家' }}</h2>
+                <p>{{ isAdmin ? 'Management Access' : '请登录您的业主账号' }}</p>
+            </div>
+            
+            <el-form :model="form" :rules="rules" ref="formRef" size="large" class="login-form">
+                <el-form-item prop="username">
+                <el-input 
+                    v-model="form.username" 
+                    placeholder="请输入用户名" 
+                    prefix-icon="User" 
+                    class="custom-input"
+                />
+                </el-form-item>
+                <el-form-item prop="password">
+                <el-input 
+                    v-model="form.password" 
+                    type="password" 
+                    placeholder="请输入密码" 
+                    prefix-icon="Lock" 
+                    show-password 
+                    class="custom-input"
+                />
+                </el-form-item>
+                <el-form-item>
+                <el-button type="primary" class="login-btn" @click="handleLogin" :loading="loading">
+                    登录
+                </el-button>
+                </el-form-item>
+                
+                <div class="login-footer">
+                <div class="role-switch" @click="toggleRole">
+                    <el-icon><Switch /></el-icon>
+                    <span>{{ isAdmin ? '切换为业主登录' : '切换为后台登录' }}</span>
+                </div>
+                <div class="register-link" v-if="!isAdmin" @click="router.push('/register')">
+                    <span>没有账号？</span>
+                    <span class="link-text">立即注册</span>
+                </div>
+                </div>
+            </el-form>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, reactive } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import axios from 'axios'
+
+const router = useRouter()
+const isAdmin = ref(false)
+const loading = ref(false)
+const formRef = ref(null)
+
+const form = reactive({
+  username: '',
+  password: ''
+})
+
+const rules = {
+  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+}
+
+const toggleRole = () => {
+  isAdmin.value = !isAdmin.value
+  form.username = ''
+  form.password = ''
+}
+
+const handleLogin = async () => {
+  if (!formRef.value) return
+  await formRef.value.validate(async (valid) => {
+    if (valid) {
+      loading.value = true
+      try {
+        const res = await axios.post('/api/auth/login', form)
+        if (res.data.code === 200) {
+            localStorage.setItem('token', res.data.data.token)
+            localStorage.setItem('user', JSON.stringify(res.data.data.user))
+            ElMessage.success('登录成功')
+            const userType = res.data.data.user.userType;
+            if (userType <= 2) {
+                 router.push('/admin/dashboard')
+            } else {
+                 router.push('/user/home')
+            }
+        } else {
+            ElMessage.error(res.data.message || '登录失败')
+        }
+      } catch (error) {
+        console.error(error)
+        ElMessage.error('登录请求失败')
+      } finally {
+        loading.value = false
+      }
+    }
+  })
+}
+</script>
+
+<style scoped>
+.login-container {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f0f2f5;
+  background-image: 
+    radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+    radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+    radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+  background-size: cover;
+}
+
+.login-wrapper {
+  width: 1000px;
+  height: 600px;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  display: flex;
+  overflow: hidden;
+}
+
+.login-left {
+  flex: 1;
+  background: linear-gradient(135deg, #165DFF 0%, #36CFC9 100%);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+  padding: 40px;
+  overflow: hidden;
+}
+
+.brand-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+}
+
+.logo-area {
+  margin-bottom: 20px;
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
+  100% { transform: translateY(0px); }
+}
+
+.brand-content h1 {
+  font-size: 36px;
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: 2px;
+}
+
+.subtitle {
+  font-size: 16px;
+  opacity: 0.8;
+  margin: 10px 0 20px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.desc {
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.shape {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  z-index: 1;
+}
+
+.shape-1 {
+  width: 200px;
+  height: 200px;
+  top: -50px;
+  left: -50px;
+}
+
+.shape-2 {
+  width: 300px;
+  height: 300px;
+  bottom: -100px;
+  right: -50px;
+}
+
+.shape-3 {
+  width: 100px;
+  height: 100px;
+  bottom: 50%;
+  left: 20%;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.login-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: #fff;
+  padding: 40px;
+}
+
+.form-content {
+  width: 100%;
+  max-width: 360px;
+}
+
+.form-header {
+  margin-bottom: 40px;
+}
+
+.form-header h2 {
+  font-size: 28px;
+  color: #333;
+  margin: 0 0 10px;
+  font-weight: 600;
+}
+
+.form-header p {
+  color: #999;
+  margin: 0;
+  font-size: 14px;
+}
+
+.login-form :deep(.el-input__wrapper) {
+  border-radius: 8px;
+  padding: 8px 15px;
+  box-shadow: 0 0 0 1px #dcdfe6 inset;
+}
+
+.login-form :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #165DFF inset;
+}
+
+.login-btn {
+  width: 100%;
+  height: 44px;
+  font-size: 16px;
+  border-radius: 8px;
+  margin-top: 10px;
+  background: linear-gradient(90deg, #165DFF 0%, #36CFC9 100%);
+  border: none;
+  transition: all 0.3s;
+}
+
+.login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(22, 93, 255, 0.3);
+}
+
+.login-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  font-size: 14px;
+  color: #666;
+}
+
+.role-switch {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: color 0.3s;
+}
+
+.role-switch:hover {
+  color: #165DFF;
+}
+
+.register-link {
+  cursor: pointer;
+}
+
+.link-text {
+  color: #165DFF;
+  font-weight: 500;
+}
+
+.link-text:hover {
+  text-decoration: underline;
+}
+</style>

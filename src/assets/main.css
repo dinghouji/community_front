@@ -1,0 +1,36 @@
+/* Reset and global styles */
+:root {
+  --primary-color: #165DFF;
+  --success-color: #36CFC9;
+  --text-color-primary: #333333;
+  --text-color-regular: #666666;
+  --text-color-secondary: #999999;
+  --border-color: #EBEEF5;
+}
+
+body {
+  margin: 0;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--text-color-primary);
+  background-color: #f0f2f5;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
