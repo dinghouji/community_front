@@ -13,8 +13,8 @@
                 <path d="M15 12H17V14H15V12Z" fill="#165DFF"/>
              </svg>
           </div>
-          <h1>智慧社区</h1>
-          <p class="subtitle">Smart Community Management System</p>
+          <h1>物业信息管理系统</h1>
+          <p class="subtitle">Property Information Management System</p>
           <p class="desc">连接你我，共建美好家园</p>
         </div>
         <!-- Decorative Shapes -->

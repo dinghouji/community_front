@@ -3,6 +3,13 @@
     <el-tabs v-model="activeTab">
       <el-tab-pane label="车位列表" name="list">
         <el-row :gutter="20">
+          <!-- 添加加载状态提示 -->
+          <div v-if="loading" class="loading-text">正在加载车位信息...</div>
+          
+          <!-- 添加无数据提示 -->
+          <div v-else-if="list.length === 0" class="no-data-text">暂无可用车位</div>
+          
+          <!-- 正常显示车位列表 -->
           <el-col :span="6" v-for="item in list" :key="item.id" style="margin-bottom: 20px;">
             <el-card shadow="hover" :body-style="{ padding: '15px' }">
               <div class="parking-header">
@@ -13,6 +20,10 @@
                 <div class="status">
                   <el-tag v-if="item.status === 0" type="success">空闲</el-tag>
                   <el-tag v-else type="danger">已售出</el-tag>
+                </div>
+                <!-- 显示车位描述 -->
+                <div v-if="item.description" class="description">
+                  {{ item.description }}
                 </div>
               </div>
               <div class="action" style="margin-top: 15px;">
@@ -42,9 +53,9 @@
         <el-form-item label="车位号">
           <el-input v-model="form.parkingNumber" disabled />
         </el-form-item>
-        <!-- <el-form-item label="车位描述">
+        <el-form-item label="车位描述">
           <el-input type="textarea" v-model="form.description" disabled></el-input>
-        </el-form-item> -->
+        </el-form-item>
         <el-form-item label="选择方式">
           <el-radio-group v-model="form.type">
             <el-radio label="purchase">购买</el-radio>
@@ -88,6 +99,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 
 const activeTab = ref('list')
 const list = ref([])
+const loading = ref(false) // 添加加载状态
 
 // 对话框相关
 const dialog = ref({ visible: false, title: '' })
@@ -97,12 +109,21 @@ const form = ref({
   type: 'purchase',
   purchasePrice: 0,
   rentPrice: 0,
-  paymentMethod: ''
+  paymentMethod: '',
+  description: '' // 添加 description 字段
 })
 
 const getList = async () => {
-  const res = await getParkingPage({ pageNum: 1, pageSize: 100 })
-  list.value = res.data.records
+  try {
+    loading.value = true // 开始加载
+    const res = await getParkingPage({ pageNum: 1, pageSize: 100 })
+    list.value = res.data.records || []
+  } catch (error) {
+    console.error('获取车位列表失败:', error)
+    ElMessage.error('获取车位列表失败，请重试')
+  } finally {
+    loading.value = false // 加载完成
+  }
 }
 
 const showPurchaseDialog = (item) => {
@@ -111,6 +132,7 @@ const showPurchaseDialog = (item) => {
     parkingNumber: item.parkingNumber,
     purchasePrice: item.purchasePrice || 0,
     rentPrice: item.rentPrice || 0,
+    description: item.description || '', // 确保从后端获取 description 字段
     type: 'purchase', // 默认选择购买
     paymentMethod: '' // 清空支付方式
   })
@@ -125,7 +147,8 @@ const resetForm = () => {
     type: 'purchase',
     purchasePrice: 0,
     rentPrice: 0,
-    paymentMethod: ''
+    paymentMethod: '',
+    description: '' // 重置 description 字段
   })
 }
 
@@ -167,4 +190,7 @@ onMounted(() => {
 .parking-header { display: flex; align-items: center; margin-bottom: 15px; }
 .parking-no { font-size: 20px; font-weight: bold; margin-left: 10px; }
 .parking-info { display: flex; justify-content: space-between; align-items: center; }
+.description { margin-top: 8px; color: #666; font-size: 14px; }
+.loading-text { text-align: center; color: #999; margin: 20px 0; }
+.no-data-text { text-align: center; color: #999; margin: 20px 0; }
 </style>

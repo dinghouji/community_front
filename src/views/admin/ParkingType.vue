@@ -5,7 +5,7 @@
     </div>
     <el-table :data="tableData" v-loading="loading" border stripe style="margin-top: 20px;">
       <el-table-column prop="typeName" label="类型名称" />
-      <el-table-column prop="price" label="价格(元/月)" />
+      
       <el-table-column label="操作" width="180">
         <template #default="scope">
           <el-button type="primary" link @click="handleEdit(scope.row)"><el-icon><Edit /></el-icon></el-button>
@@ -17,9 +17,6 @@
       <el-form :model="form" label-width="80px">
         <el-form-item label="类型名称">
           <el-input v-model="form.typeName" />
-        </el-form-item>
-        <el-form-item label="价格">
-          <el-input-number v-model="form.price" :precision="2" :step="10" />
         </el-form-item>
       </el-form>
       <template #footer>
