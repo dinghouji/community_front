@@ -10,6 +10,16 @@
           {{ typeMap[scope.row.typeId] || scope.row.typeId }}
         </template>
       </el-table-column>
+      <el-table-column prop="purchasePrice" label="购买价格(元)">
+        <template #default="scope">
+          {{ scope.row.purchasePrice ? scope.row.purchasePrice.toFixed(2) : '-' }}
+        </template>
+      </el-table-column>
+      <el-table-column prop="rentPrice" label="租赁价格(元/月)">
+        <template #default="scope">
+          {{ scope.row.rentPrice ? scope.row.rentPrice.toFixed(2) : '-' }}
+        </template>
+      </el-table-column>
       <el-table-column prop="status" label="状态">
         <template #default="scope">
           <el-tag v-if="scope.row.status === 0" type="success">空闲</el-tag>
@@ -32,6 +42,26 @@
           <el-select v-model="form.typeId" placeholder="请选择车位类型">
             <el-option v-for="t in typeList" :key="t.id" :label="t.typeName" :value="t.id" />
           </el-select>
+        </el-form-item>
+        <el-form-item label="购买价格(元)">
+          <el-input-number 
+            v-model="form.purchasePrice" 
+            :min="0" 
+            :precision="2"
+            :step="1000"
+            placeholder="请输入购买总价"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="租赁价格(元/月)">
+          <el-input-number 
+            v-model="form.rentPrice" 
+            :min="0" 
+            :precision="2"
+            :step="100"
+            placeholder="请输入月租价格"
+            style="width: 100%"
+          />
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="form.status">
@@ -58,7 +88,7 @@ const loading = ref(false)
 const tableData = ref([])
 const typeList = ref([])
 const dialog = reactive({ visible: false, title: '' })
-const form = reactive({ id: null, parkingNumber: '', typeId: null, status: 0 })
+const form = reactive({ id: null, parkingNumber: '', typeId: null, status: 0, purchasePrice: null, rentPrice: null })
 
 const typeMap = computed(() => {
   const map = {}
@@ -79,7 +109,7 @@ const getTypes = async () => {
 }
 
 const handleAdd = () => {
-  Object.assign(form, { id: null, parkingNumber: '', typeId: null, status: 0 })
+  Object.assign(form, { id: null, parkingNumber: '', typeId: null, status: 0, purchasePrice: null, rentPrice: null })
   dialog.title = '新增车位'
   dialog.visible = true
 }

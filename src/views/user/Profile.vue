@@ -35,12 +35,35 @@
         </el-form-item>
       </el-form>
     </el-card>
+
+    <!-- 修改密码卡片 -->
+    <el-card class="box-card password-card">
+      <template #header>
+        <div class="card-header">
+          <span>修改密码</span>
+        </div>
+      </template>
+      <el-form :model="passwordForm" :rules="passwordRules" ref="passwordFormRef" label-width="100px">
+        <el-form-item label="原密码" prop="oldPassword">
+          <el-input v-model="passwordForm.oldPassword" type="password" show-password prefix-icon="Lock" />
+        </el-form-item>
+        <el-form-item label="新密码" prop="newPassword">
+          <el-input v-model="passwordForm.newPassword" type="password" show-password prefix-icon="Lock" />
+        </el-form-item>
+        <el-form-item label="确认密码" prop="confirmPassword">
+          <el-input v-model="passwordForm.confirmPassword" type="password" show-password prefix-icon="Lock" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="handleChangePassword">修改密码</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
-import { updateUser } from '@/api/user'
+import { updateUser, changePassword } from '@/api/user'
 import { ElMessage } from 'element-plus'
 
 const form = reactive({
@@ -50,6 +73,36 @@ const form = reactive({
   phone: '',
   avatar: ''
 })
+
+const passwordForm = reactive({
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
+
+const passwordFormRef = ref(null)
+
+const passwordRules = {
+  oldPassword: [{ required: true, message: '请输入原密码', trigger: 'blur' }],
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: true, message: '请确认新密码', trigger: 'blur' },
+    { validator: validateConfirmPassword, trigger: 'blur' }
+  ]
+}
+
+function validateConfirmPassword(rule, value, callback) {
+  if (value === '') {
+    callback(new Error('请再次输入新密码'))
+  } else if (value !== passwordForm.newPassword) {
+    callback(new Error('两次输入的密码不一致'))
+  } else {
+    callback()
+  }
+}
 
 const headers = computed(() => {
   return {
@@ -98,13 +151,41 @@ const handleSave = async () => {
   Object.assign(user, form)
   localStorage.setItem('user', JSON.stringify(user))
 }
+
+const handleChangePassword = async () => {
+  if (!passwordFormRef.value) return
+  await passwordFormRef.value.validate(async (valid) => {
+    if (valid) {
+      try {
+        await changePassword({
+          oldPassword: passwordForm.oldPassword,
+          newPassword: passwordForm.newPassword
+        })
+        ElMessage.success('密码修改成功，请重新登录')
+        // 清除本地存储并跳转到登录页
+        localStorage.clear()
+        window.location.href = '/login'
+      } catch (error) {
+        console.error(error)
+        ElMessage.error('密码修改失败')
+      }
+    }
+  })
+}
 </script>
 
 <style scoped>
 .profile-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
   padding: 20px;
   max-width: 600px;
   margin: 0 auto;
+}
+.card-header {
+  font-size: 18px;
+  font-weight: bold;
 }
 .avatar-container {
   text-align: center;
@@ -142,5 +223,8 @@ const handleSave = async () => {
   margin-top: 10px;
   font-size: 12px;
   color: #999;
+}
+.password-card {
+  margin-top: 20px;
 }
 </style>
