@@ -30,3 +30,11 @@ export function deleteUser(id) {
     method: 'delete'
   })
 }
+
+export function changePassword(data) {
+  return request({
+    url: '/user/change-password',
+    method: 'post',
+    data
+  })
+}

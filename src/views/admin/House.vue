@@ -15,6 +15,11 @@
           <el-tag v-else type="success">已入住</el-tag>
         </template>
       </el-table-column>
+      <el-table-column prop="ownerName" label="业主" width="120">
+        <template #default="scope">
+          {{ scope.row.ownerName || '-' }}
+        </template>
+      </el-table-column>
       <el-table-column label="操作" width="180">
         <template #default="scope">
           <el-button type="primary" link @click="handleEdit(scope.row)"><el-icon><Edit /></el-icon></el-button>
@@ -44,9 +49,14 @@
           <el-input-number v-model="form.area" :precision="2" :step="0.1" />
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="form.status">
+          <el-select v-model="form.status" @change="handleStatusChange">
             <el-option label="空置" :value="0" />
             <el-option label="已入住" :value="1" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="业主" v-if="form.status === 1">
+          <el-select v-model="form.ownerId" placeholder="请选择业主" filterable style="width: 100%">
+            <el-option v-for="item in userList" :key="item.id" :label="item.realName || item.username" :value="item.id" />
           </el-select>
         </el-form-item>
       </el-form>
@@ -63,14 +73,16 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { getHousePage, saveHouse, updateHouse, deleteHouse } from '@/api/house'
 import { getBuildingPage } from '@/api/building'
 import { getUnitPage } from '@/api/unit'
+import { getUserPage } from '@/api/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const loading = ref(false)
 const tableData = ref([])
 const buildingList = ref([])
 const unitList = ref([])
+const userList = ref([])
 const dialog = reactive({ visible: false, title: '' })
-const form = reactive({ id: null, buildingId: null, unitId: null, houseNumber: '', floor: 1, area: 0, status: 0 })
+const form = reactive({ id: null, buildingId: null, unitId: null, houseNumber: '', floor: 1, area: 0, status: 0, ownerId: null })
 
 // 根据选择的楼栋过滤单元
 const filteredUnitList = computed(() => {
@@ -83,12 +95,24 @@ const fetchDropdowns = async () => {
   buildingList.value = buildingRes.data.records || []
   const unitRes = await getUnitPage({ pageNum: 1, pageSize: 100 })
   unitList.value = unitRes.data.records || []
+  // 获取用户列表（只获取业主，userType为3）
+  const userRes = await getUserPage({ pageNum: 1, pageSize: 100, userType: 3 })
+  userList.value = userRes.data.records || []
 }
 
 const getList = async () => {
   loading.value = true
   const res = await getHousePage({ pageNum: 1, pageSize: 100 })
   tableData.value = res.data.records || []
+  // 为每个房屋添加ownerName字段
+  tableData.value.forEach(house => {
+    if (house.ownerId) {
+      const user = userList.value.find(u => u.id === house.ownerId)
+      house.ownerName = user ? (user.realName || user.username) : '-'
+    } else {
+      house.ownerName = '-'
+    }
+  })
   loading.value = false
 }
 
@@ -96,8 +120,14 @@ const handleBuildingChange = () => {
   form.unitId = null // 切换楼栋时清空单元选择
 }
 
+const handleStatusChange = () => {
+  if (form.status === 0) {
+    form.ownerId = null // 状态改为空置时清空业主选择
+  }
+}
+
 const handleAdd = () => {
-  Object.assign(form, { id: null, buildingId: null, unitId: null, houseNumber: '', floor: 1, area: 0, status: 0 })
+  Object.assign(form, { id: null, buildingId: null, unitId: null, houseNumber: '', floor: 1, area: 0, status: 0, ownerId: null })
   dialog.title = '新增房屋'
   dialog.visible = true
 }
@@ -121,6 +151,9 @@ const handleDelete = (row) => {
 const submitForm = async () => {
   if (!form.unitId) {
     return ElMessage.warning('请选择单元')
+  }
+  if (form.status === 1 && !form.ownerId) {
+    return ElMessage.warning('请选择业主')
   }
   if (form.id) {
     await updateHouse(form)

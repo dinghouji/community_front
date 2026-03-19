@@ -22,7 +22,7 @@
       </div>
       <el-form :model="form" label-width="100px">
         <el-form-item label="用户名">
-          <el-input v-model="form.username" disabled prefix-icon="User" />
+          <el-input v-model="form.username"  prefix-icon="User" />
         </el-form-item>
         <el-form-item label="真实姓名">
           <el-input v-model="form.realName" prefix-icon="Postcard" />
@@ -34,14 +34,36 @@
           <el-button type="primary" @click="handleSave">保存修改</el-button>
         </el-form-item>
       </el-form>
+
+      <!-- 修改密码区域 -->
+      <el-divider />
+      <h3 style="margin-bottom: 16px;">修改密码</h3>
+      <el-form :model="passwordForm" :rules="passwordRules" ref="passwordFormRef" label-width="100px">
+        <el-form-item label="当前密码" prop="oldPassword">
+          <el-input v-model="passwordForm.oldPassword" type="password" show-password />
+        </el-form-item>
+        <el-form-item label="新密码" prop="newPassword">
+          <el-input v-model="passwordForm.newPassword" type="password" show-password />
+        </el-form-item>
+        <el-form-item label="确认密码" prop="confirmPassword">
+          <el-input v-model="passwordForm.confirmPassword" type="password" show-password />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="handleChangePassword">修改密码</el-button>
+        </el-form-item>
+      </el-form>
     </el-card>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
-import { updateUser } from '@/api/user'
+import { useRouter } from 'vue-router'
+import { updateUser, changePassword } from '@/api/user'
 import { ElMessage } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
+
+const router = useRouter()
 
 const form = reactive({
   id: null,
@@ -50,6 +72,35 @@ const form = reactive({
   phone: '',
   avatar: ''
 })
+
+// 密码表单
+const passwordForm = reactive({
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
+
+const passwordFormRef = ref()
+
+const passwordRules = {
+  oldPassword: [{ required: true, message: '请输入当前密码', trigger: 'blur' }],
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 6, message: '密码长度至少6位', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: true, message: '请确认新密码', trigger: 'blur' },
+    { validator: validateConfirmPassword, trigger: 'blur' }
+  ]
+}
+
+function validateConfirmPassword(rule, value, callback) {
+  if (value !== passwordForm.newPassword) {
+    callback(new Error('两次输入的密码不一致'))
+  } else {
+    callback()
+  }
+}
 
 const headers = computed(() => {
   return {
@@ -97,6 +148,33 @@ const handleSave = async () => {
   let user = JSON.parse(localStorage.getItem('user'))
   Object.assign(user, form)
   localStorage.setItem('user', JSON.stringify(user))
+}
+
+// 修改密码
+const handleChangePassword = async () => {
+  try {
+    await passwordFormRef.value.validate()
+    const res = await changePassword({
+      oldPassword: passwordForm.oldPassword,
+      newPassword: passwordForm.newPassword
+    })
+    if (res.code === 200) {
+      ElMessage.success('密码修改成功，请重新登录')
+      // 清空表单
+      passwordForm.oldPassword = ''
+      passwordForm.newPassword = ''
+      passwordForm.confirmPassword = ''
+      // 清除本地存储的用户信息和token
+      localStorage.removeItem('user')
+      localStorage.removeItem('token')
+      // 跳转到登录页面
+      router.push('/login')
+    } else {
+      ElMessage.error(res.message || '修改失败')
+    }
+  } catch (error) {
+    console.error('修改密码验证失败:', error)
+  }
 }
 </script>
 
